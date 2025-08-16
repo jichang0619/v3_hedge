@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Uniswap V3 liquidity provider hedging calculator with advanced strategies for optimal capital protection">
+    <meta name="keywords" content="Uniswap V3, LP, hedging, DeFi, calculator, liquidity provider">
+    <meta name="author" content="V3 Hedge Calculator">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="V3 Hedge">
+    <meta name="msapplication-TileColor" content="#3B82F6">
+    <meta name="msapplication-config" content="browserconfig.xml">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect fill='%233B82F6' width='180' height='180' rx='20'/%3E%3Ctext x='90' y='110' text-anchor='middle' fill='white' font-size='70' font-family='monospace'%3E📊%3C/text%3E%3C/svg%3E">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <title>V3 LP Hedging Calculator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0D0E12;
+            color: #FFFFFF;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #0D0E12;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1A1B23 0%, #2A2D3A 100%);
+            border-bottom: 1px solid #2A2D3A;
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-left h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-bottom: 4px;
+        }
+        
+        .header-left p {
+            font-size: 14px;
+            color: #9CA3AF;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22C55E;
+            border-radius: 50%;
+        }
+        
+        .status-text {
+            font-size: 12px;
+            color: #22C55E;
+            font-weight: 500;
+        }
+        
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            height: calc(100vh - 81px);
+        }
+        
+        /* Input Panel */
+        .input-panel {
+            background: #1A1B23;
+            border-right: 1px solid #2A2D3A;
+            padding: 32px;
+            overflow-y: auto;
+        }
+        
+        .section {
+            margin-bottom: 32px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-bottom: 16px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #9CA3AF;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .input-field {
+            width: 100%;
+            background: #2A2D3A;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #FFFFFF;
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .token-selector {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .token-select {
+            flex: 1;
+            background: #2A2D3A;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+        
+        .refresh-btn {
+            background: #3B82F6;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #FFFFFF;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .refresh-btn:hover {
+            background: #2563EB;
+        }
+        
+        .price-input-container {
+            position: relative;
+        }
+        
+        .price-loading {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+        
+        .quick-calc {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .quick-calc-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #3B82F6;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .quick-input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .calc-btn {
+            background: #3B82F6;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #FFFFFF;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .calc-btn:hover {
+            background: #2563EB;
+        }
+        
+        .quick-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .quick-metric {
+            background: rgba(42, 45, 58, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 11px;
+            color: #9CA3AF;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .metric-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+        
+        .metric-value.positive {
+            color: #22C55E;
+        }
+        
+        .metric-value.negative {
+            color: #EF4444;
+        }
+        
+        .debug-info {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 11px;
+            color: #FCD34D;
+        }
+        
+        .debug-info h4 {
+            margin-bottom: 8px;
+            color: #F59E0B;
+        }
+
+        /* Token Input Styles */
+        .token-input-container {
+            background: rgba(42, 45, 58, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .token-input-group {
+            background: #2A2D3A;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .token-input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .token-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .token-header img {
+            border-radius: 50%;
+        }
+
+        .usdc-icon {
+            width: 24px;
+            height: 24px;
+            background: #2775CA;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .token-symbol {
+            font-weight: 600;
+            color: #FFFFFF;
+            font-size: 16px;
+        }
+
+        .token-price {
+            font-size: 14px;
+            color: #9CA3AF;
+            margin-left: auto;
+        }
+
+        .token-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #FFFFFF;
+            font-size: 24px;
+            font-weight: 500;
+            outline: none;
+        }
+
+        .token-input::placeholder {
+            color: #6B7280;
+        }
+
+        .plus-icon {
+            text-align: center;
+            color: #9CA3AF;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 8px 0;
+        }
+
+        .lp-preview {
+            background: rgba(59, 130, 246, 0.05);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .preview-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #3B82F6;
+            margin-bottom: 12px;
+        }
+
+        .preview-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #9CA3AF;
+        }
+
+        .preview-item span:last-child {
+            color: #FFFFFF;
+            font-weight: 500;
+        }
+
+        /* Analysis Section Styles */
+        .analysis-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .quick-price-check {
+            background: rgba(42, 45, 58, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .quick-input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .calc-btn {
+            background: #3B82F6;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #FFFFFF;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .calc-btn:hover {
+            background: #2563EB;
+        }
+
+        .quick-results {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .quick-metric {
+            background: rgba(42, 45, 58, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .short-strategies {
+            background: rgba(42, 45, 58, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .strategy-card {
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .strategy-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .bull-strategy {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .normal-strategy {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .bear-strategy {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .strategy-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .strategy-icon {
+            font-size: 16px;
+        }
+
+        .strategy-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+
+        .strategy-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 6px;
+            flex-grow: 1;
+        }
+
+        .bull-strategy .strategy-value {
+            color: #22C55E;
+        }
+
+        .normal-strategy .strategy-value {
+            color: #3B82F6;
+        }
+
+        .bear-strategy .strategy-value {
+            color: #EF4444;
+        }
+
+        .strategy-description {
+            font-size: 10px;
+            color: #9CA3AF;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            flex-grow: 1;
+        }
+
+        .strategy-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: auto;
+        }
+
+        .strategy-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #9CA3AF;
+        }
+
+        .strategy-item span:last-child {
+            color: #FFFFFF;
+            font-weight: 500;
+        }
+
+        .strategy-card.selected {
+            border-width: 2px;
+            transform: scale(1.02);
+        }
+
+        .bull-strategy.selected {
+            border-color: #22C55E;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .normal-strategy.selected {
+            border-color: #3B82F6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .bear-strategy.selected {
+            border-color: #EF4444;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Mobile Modal Styles */
+        .mobile-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .mobile-modal {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 85vw;
+            max-width: 400px;
+            height: 100vh;
+            background: #1A1B23;
+            border-left: 1px solid #2A2D3A;
+            transition: right 0.3s ease-in-out;
+            overflow-y: auto;
+            z-index: 1001;
+        }
+
+        .mobile-modal.open {
+            right: 0;
+        }
+
+        .mobile-modal-header {
+            background: #2A2D3A;
+            padding: 16px 20px;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .mobile-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+
+        .mobile-modal-close {
+            background: none;
+            border: none;
+            color: #9CA3AF;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-modal-close:hover {
+            background: rgba(156, 163, 175, 0.1);
+            color: #FFFFFF;
+        }
+
+        .mobile-modal-content {
+            padding: 20px;
+        }
+
+        .mobile-results-header {
+            margin-bottom: 20px;
+        }
+
+        .mobile-results-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-bottom: 16px;
+        }
+
+        .mobile-table-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .mobile-control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .mobile-control-label {
+            font-size: 12px;
+            color: #9CA3AF;
+            font-weight: 500;
+        }
+
+        .mobile-dropdown {
+            background: #2A2D3A;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #FFFFFF;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        .mobile-table-wrapper {
+            background: #1A1B23;
+            border: 1px solid #2A2D3A;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .mobile-table-container {
+            overflow: auto;
+            max-height: 60vh;
+        }
+
+        /* Mobile View Toggle Button */
+        .mobile-view-toggle {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #3B82F6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            z-index: 999;
+            transition: all 0.2s ease;
+        }
+
+        .mobile-view-toggle:hover {
+            background: #2563EB;
+            transform: scale(1.05);
+        }
+
+        .mobile-view-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        /* Results Panel */
+        .results-panel {
+            background: #0D0E12;
+            padding: 32px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .results-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+        
+        .table-controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .control-group-inline {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .control-label {
+            font-size: 12px;
+            color: #9CA3AF;
+            font-weight: 500;
+        }
+        
+        .dropdown {
+            background: #2A2D3A;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #FFFFFF;
+            cursor: pointer;
+            min-width: 120px;
+        }
+        
+        .table-wrapper {
+            flex: 1;
+            background: #1A1B23;
+            border: 1px solid #2A2D3A;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .table-container {
+            overflow: auto;
+            max-height: calc(100vh - 250px);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        thead {
+            background: #2A2D3A;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        th {
+            padding: 16px 12px;
+            text-align: center;
+            font-weight: 600;
+            color: #9CA3AF;
+            font-size: 12px;
+            border-bottom: 1px solid #374151;
+        }
+        
+        td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(42, 45, 58, 0.5);
+            font-size: 13px;
+            color: #FFFFFF;
+        }
+        
+        tr:hover {
+            background: rgba(42, 45, 58, 0.3);
+        }
+        
+        .price-cell {
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+        
+        .positive {
+            color: #22C55E;
+            font-weight: 500;
+        }
+        
+        .negative {
+            color: #EF4444;
+            font-weight: 500;
+        }
+        
+        .neutral {
+            color: #9CA3AF;
+            font-weight: 500;
+        }
+        
+        .highlight-row {
+            background: rgba(59, 130, 246, 0.1) !important;
+            border-left: 3px solid #3B82F6;
+        }
+        
+        .optimal-row {
+            background: rgba(34, 197, 94, 0.1) !important;
+            border-left: 3px solid #22C55E;
+        }
+        
+        /* Loading States */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #374151;
+            border-top: 2px solid #3B82F6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 380px 1fr;
+            }
+            
+            .input-panel {
+                padding: 24px;
+            }
+            
+            .strategy-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .strategy-card {
+                min-height: 100px;
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 968px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .input-panel {
+                border-right: none;
+                border-bottom: 1px solid #2A2D3A;
+            }
+            
+            .results-panel {
+                display: none; /* Hide desktop results panel on mobile */
+            }
+            
+            .mobile-view-toggle {
+                display: flex; /* Show mobile toggle button */
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .strategy-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+        
+        @media (min-width: 400px) and (max-width: 500px) {
+            .input-panel {
+                padding: 16px;
+            }
+            
+            .strategy-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 8px;
+            }
+            
+            .strategy-card {
+                min-height: 110px;
+                padding: 8px;
+            }
+            
+            .strategy-title {
+                font-size: 11px;
+            }
+            
+            .strategy-value {
+                font-size: 14px;
+            }
+            
+            .strategy-description {
+                font-size: 9px;
+            }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1A1B23;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4B5563;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <h1>V3 LP Hedging Calculator</h1>
+                <p>Optimize capital protection with concentrated liquidity hedging</p>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span class="status-text">Live Data</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <!-- Input Panel -->
+            <div class="input-panel">
+                <div class="section">
+                    <div class="section-title">Token & Price</div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">Token Selection</label>
+                        <div class="token-selector">
+                            <select class="token-select" id="tokenSelect" onchange="fetchTokenPrice()">
+                                <option value="ethereum">Ethereum (ETH)</option>
+                                <option value="bitcoin">Bitcoin (BTC)</option>
+                                <option value="uniswap">Uniswap (UNI)</option>
+                                <option value="chainlink">Chainlink (LINK)</option>
+                                <option value="matic-network">Polygon (MATIC)</option>
+                                <option value="solana">Solana (SOL)</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                            <button class="refresh-btn" onclick="fetchTokenPrice()">↻</button>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">Entry Price (USD)</label>
+                        <div class="price-input-container">
+                            <input type="number" class="input-field" id="entryPrice" value="4395.81" step="0.01">
+                            <div class="price-loading" id="priceLoading" style="display: none;">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Price Range</div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">Lower Range ($)</label>
+                        <input type="number" class="input-field" id="lowerRange" value="3789.50" step="0.01">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">Upper Range ($)</label>
+                        <input type="number" class="input-field" id="upperRange" value="4993.92" step="0.01">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Deposit Amounts</div>
+                    
+                    <div class="token-input-container">
+                        <div class="token-input-group">
+                            <div class="token-header">
+                                <img id="tokenIcon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23627EEA'/%3E%3Cg fill='%23FFF' fill-rule='nonzero'%3E%3Cpath fill-opacity='.602' d='M16.498 4v8.87l7.497 3.35L16.498 4z'/%3E%3Cpath d='M16.498 4L9 16.22l7.498-3.35V4z'/%3E%3Cpath fill-opacity='.602' d='M16.498 21.968v6.027L24 17.616l-7.502 4.352z'/%3E%3Cpath d='M16.498 27.995v-6.028L9 17.616l7.498 10.38z'/%3E%3Cpath fill-opacity='.2' d='M16.498 20.573l7.497-4.353-7.497-3.348v7.701z'/%3E%3Cpath fill-opacity='.602' d='M9 16.22l7.498 4.353v-7.701L9 16.22z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E" alt="ETH" width="24" height="24">
+                                <span class="token-symbol" id="tokenSymbol">ETH</span>
+                                <span class="token-price" id="tokenPrice">$4,395.81</span>
+                            </div>
+                            <input type="number" class="token-input" id="tokenInput" placeholder="0" step="0.0001" oninput="calculateFromToken()">
+                        </div>
+
+                        <div class="plus-icon">+</div>
+
+                        <div class="token-input-group">
+                            <div class="token-header">
+                                <div class="usdc-icon">$</div>
+                                <span class="token-symbol">USDC</span>
+                                <span class="token-price">$1.00</span>
+                            </div>
+                            <input type="number" class="token-input" id="usdcInput" placeholder="0" step="0.01" oninput="calculateFromUSDC()">
+                        </div>
+                    </div>
+
+                    <div class="lp-preview" id="lpPreview" style="display: none;">
+                        <div class="preview-header">LP Position Preview</div>
+                        <div class="preview-content">
+                            <div class="preview-item">
+                                <span>Total Value:</span>
+                                <span id="previewTotal">$0</span>
+                            </div>
+                            <div class="preview-item">
+                                <span id="previewTokenLabel">Token Amount:</span>
+                                <span id="previewETH">0 TOKEN</span>
+                            </div>
+                            <div class="preview-item">
+                                <span>USDC Amount:</span>
+                                <span id="previewUSDC">0 USDC</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Hedging</div>
+                    
+                    <div class="input-group">
+                        <label class="input-label">Short Position ($)</label>
+                        <input type="number" class="input-field" id="shortSize" value="1666" step="100">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Strategy Selection</div>
+                    
+                    <div class="short-strategies">
+                        <div class="strategy-grid">
+                            <div class="strategy-card bull-strategy" onclick="selectStrategy('bull')">
+                                <div class="strategy-header">
+                                    <span class="strategy-icon">🐂</span>
+                                    <span class="strategy-title">Bull Market</span>
+                                </div>
+                                <div class="strategy-value" id="bullShort">$0</div>
+                                <div class="strategy-description">Lower hedge for upside capture</div>
+                                <div class="strategy-details">
+                                    <div class="strategy-item">
+                                        <span>Hedge Ratio:</span>
+                                        <span id="bullHedgeRatio">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="strategy-card normal-strategy" onclick="selectStrategy('normal')">
+                                <div class="strategy-header">
+                                    <span class="strategy-icon">⚖️</span>
+                                    <span class="strategy-title">Normal</span>
+                                </div>
+                                <div class="strategy-value" id="normalShort">$0</div>
+                                <div class="strategy-description">Optimal delta hedge</div>
+                                <div class="strategy-details">
+                                    <div class="strategy-item">
+                                        <span>Hedge Ratio:</span>
+                                        <span id="normalHedgeRatio">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="strategy-card bear-strategy" onclick="selectStrategy('bear')">
+                                <div class="strategy-header">
+                                    <span class="strategy-icon">🐻</span>
+                                    <span class="strategy-title">Bear Market</span>
+                                </div>
+                                <div class="strategy-value" id="bearShort">$0</div>
+                                <div class="strategy-description">Higher hedge for downside protection</div>
+                                <div class="strategy-details">
+                                    <div class="strategy-item">
+                                        <span>Hedge Ratio:</span>
+                                        <span id="bearHedgeRatio">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">Analysis</div>
+                    
+                    <div class="analysis-container">
+                        <div class="quick-price-check">
+                            <div class="input-group">
+                                <label class="input-label">Current Price Check</label>
+                                <div class="quick-input-row">
+                                    <input type="number" class="input-field" id="quickPrice" placeholder="Enter current price..." step="0.01">
+                                    <button class="calc-btn" onclick="calculateQuick()">Calculate</button>
+                                </div>
+                            </div>
+                            
+                            <div class="quick-results">
+                                <div class="quick-metric">
+                                    <div class="metric-label">LP Value</div>
+                                    <div class="metric-value" id="quickLpValue">-</div>
+                                </div>
+                                <div class="quick-metric">
+                                    <div class="metric-label">LP P&L</div>
+                                    <div class="metric-value" id="quickLpPnL">-</div>
+                                </div>
+                                <div class="quick-metric">
+                                    <div class="metric-label">Short P&L</div>
+                                    <div class="metric-value" id="quickShortPnL">-</div>
+                                </div>
+                                <div class="quick-metric">
+                                    <div class="metric-label">Net P&L</div>
+                                    <div class="metric-value" id="quickNetPnL">-</div>
+                                </div>
+                                <div class="quick-metric">
+                                    <div class="metric-label">Return</div>
+                                    <div class="metric-value" id="quickReturn">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="results-panel">
+                <div class="results-header">
+                    <div class="results-title">Price Impact Analysis</div>
+                    <div class="table-controls">
+                        <div class="control-group-inline">
+                            <span class="control-label">Price Range</span>
+                            <select class="dropdown" id="priceRange" onchange="updateTable()">
+                                <option value="narrow">±25% (Narrow)</option>
+                                <option value="medium" selected>±50% (Medium)</option>
+                                <option value="wide">±75% (Wide)</option>
+                                <option value="extreme">±100% (Extreme)</option>
+                            </select>
+                        </div>
+                        <div class="control-group-inline">
+                            <span class="control-label">Step Size</span>
+                            <select class="dropdown" id="stepSize" onchange="updateTable()">
+                                <option value="fine">2.5% (Fine)</option>
+                                <option value="normal" selected>5% (Normal)</option>
+                                <option value="coarse">10% (Coarse)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Price ($)</th>
+                                    <th>Change (%)</th>
+                                    <th>Token Amt</th>
+                                    <th>USD Amt</th>
+                                    <th>LP Value</th>
+                                    <th>LP P&L</th>
+                                    <th>Short P&L</th>
+                                    <th>Net P&L</th>
+                                    <th>Return (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile View Toggle Button -->
+    <button class="mobile-view-toggle" onclick="openMobileModal()" aria-label="View Results">
+        📊
+    </button>
+
+    <!-- Mobile Modal -->
+    <div class="mobile-modal-overlay" id="mobileModalOverlay" onclick="closeMobileModal()"></div>
+    <div class="mobile-modal" id="mobileModal">
+        <div class="mobile-modal-header">
+            <div class="mobile-modal-title">Price Impact Analysis</div>
+            <button class="mobile-modal-close" onclick="closeMobileModal()" aria-label="Close">&times;</button>
+        </div>
+        <div class="mobile-modal-content">
+            <div class="mobile-results-header">
+                <div class="mobile-table-controls">
+                    <div class="mobile-control-group">
+                        <span class="mobile-control-label">Price Range</span>
+                        <select class="mobile-dropdown" id="mobilePriceRange" onchange="updateMobileTable()">
+                            <option value="narrow">±25% (Narrow)</option>
+                            <option value="medium" selected>±50% (Medium)</option>
+                            <option value="wide">±75% (Wide)</option>
+                            <option value="extreme">±100% (Extreme)</option>
+                        </select>
+                    </div>
+                    <div class="mobile-control-group">
+                        <span class="mobile-control-label">Step Size</span>
+                        <select class="mobile-dropdown" id="mobileStepSize" onchange="updateMobileTable()">
+                            <option value="fine">2.5% (Fine)</option>
+                            <option value="normal" selected>5% (Normal)</option>
+                            <option value="coarse">10% (Coarse)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mobile-table-wrapper">
+                <div class="mobile-table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Price ($)</th>
+                                <th>Change (%)</th>
+                                <th>Token Amt</th>
+                                <th>USD Amt</th>
+                                <th>LP Value</th>
+                                <th>LP P&L</th>
+                                <th>Short P&L</th>
+                                <th>Net P&L</th>
+                                <th>Return (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mobileResultsTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load calculator logic -->
+    <script src="calculator.js"></script>
+    
+    <script>
+        // UI Management
+        let isLoading = false;
+        
+        // Token information mapping
+        const tokenInfo = {
+            'ethereum': {
+                symbol: 'ETH',
+                name: 'Ethereum',
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23627EEA'/%3E%3Cg fill='%23FFF' fill-rule='nonzero'%3E%3Cpath fill-opacity='.602' d='M16.498 4v8.87l7.497 3.35L16.498 4z'/%3E%3Cpath d='M16.498 4L9 16.22l7.498-3.35V4z'/%3E%3Cpath fill-opacity='.602' d='M16.498 21.968v6.027L24 17.616l-7.502 4.352z'/%3E%3Cpath d='M16.498 27.995v-6.028L9 17.616l7.498 10.38z'/%3E%3Cpath fill-opacity='.2' d='M16.498 20.573l7.497-4.353-7.497-3.348v7.701z'/%3E%3Cpath fill-opacity='.602' d='M9 16.22l7.498 4.353v-7.701L9 16.22z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"
+            },
+            'bitcoin': {
+                symbol: 'BTC',
+                name: 'Bitcoin',
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23F7931A'/%3E%3Cpath fill='%23FFF' fill-rule='nonzero' d='M23.189 14.02c.314-2.096-1.283-3.223-3.465-3.975l.708-2.84-1.728-.43-.69 2.765c-.454-.114-.92-.22-1.385-.326l.695-2.783L15.596 6l-.708 2.839c-.376-.086-.746-.17-1.104-.26l.002-.009-2.384-.595-.46 1.846s1.283.294 1.256.312c.7.175.826.638.805 1.006l-.806 3.235c.048.012.11.03.18.057l-.181-.045-1.13 4.532c-.086.212-.303.531-.793.41.018.025-1.256-.313-1.256-.313l-.858 1.978 2.25.561c.418.105.828.215 1.231.318l-.715 2.872 1.727.43.708-2.84c.472.127.93.245 1.378.357l-.706 2.828 1.728.43.715-2.866c2.948.558 5.164.333 6.097-2.333.752-2.146-.037-3.385-1.588-4.192 1.13-.26 1.98-1.003 2.207-2.538zm-3.95 5.538c-.533 2.147-4.148.986-5.32.695l.95-3.805c1.172.293 4.929.872 4.37 3.11zm.535-5.569c-.487 1.953-3.495.96-4.47.717l.86-3.45c.975.243 4.118.696 3.61 2.733z'/%3E%3C/g%3E%3C/svg%3E"
+            },
+            'uniswap': {
+                symbol: 'UNI',
+                name: 'Uniswap',
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23FF007A'/%3E%3Cpath fill='%23FFF' d='M20.022 18.124c-1.744 2.57-5.304.645-5.304.645s1.572 2.255 3.64 1.51 2.916-1.85 2.916-1.85-.272-.31-.63-.31c-.358 0-.622.005-.622.005zm-13.462-5.2s-1.125 3.9 1.25 8.06c2.37 4.16 5.976 2.25 5.976 2.25s-3.606 1.91-5.976-2.25c-2.375-4.16-1.25-8.06-1.25-8.06z'/%3E%3C/g%3E%3C/svg%3E"
+            },
+            'chainlink': {
+                symbol: 'LINK',
+                name: 'Chainlink',
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23375BD2'/%3E%3Cpath fill='%23FFF' d='M16.498 4l4.252 2.458v4.917l-4.252 2.458-4.252-2.458v-4.917L16.498 4zm-4.252 16.667l4.252 2.458 4.252-2.458v-4.917l-4.252-2.458-4.252 2.458v4.917z'/%3E%3C/g%3E%3C/svg%3E"
+            },
+            'matic-network': {
+                symbol: 'MATIC',
+                name: 'Polygon',
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Ccircle cx='16' cy='16' r='16' fill='%238247E5'/%3E%3Cpath fill='%23FFF' d='M21.092 12.693c-.369-.215-.821-.215-1.19 0l-3.405 1.963-2.314 1.333-3.405 1.963c-.369.215-.821.215-1.19 0l-2.696-1.561c-.369-.215-.595-.611-.595-1.037v-3.122c0-.426.226-.822.595-1.037l2.696-1.561c.369-.215.821-.215 1.19 0l2.696 1.561c.369.215.595.611.595 1.037v1.963l2.314-1.333v-1.963c0-.426-.226-.822-.595-1.037L11.405 6.693c-.369-.215-.821-.215-1.19 0l-4.571 2.635c-.369.215-.595.611-.595 1.037v5.269c0 .426.226.822.595 1.037l4.571 2.635c.369.215.821.215 1.19 0l3.405-1.963L16.524 15.3l3.405-1.963c.369-.215.821-.215 1.19 0l2.696 1.561c.369.215.595.611.595 1.037v3.122c0 .426-.226.822-.595 1.037l-2.696 1.561c-.369.215-.821.215-1.19 0l-2.696-1.561c-.369-.215-.595-.611-.595-1.037v-1.963l-2.314 1.333v1.963c0 .426.226.822.595 1.037l4.571 2.635c.369.215.821.215 1.19 0l4.571-2.635c.369-.215.595-.611.595-1.037V15.73c0-.426-.226-.822-.595-1.037l-4.571-2.635z'/%3E%3C/g%3E%3C/svg%3E"
+            },
+            'solana': {
+                symbol: 'SOL',
+                name: 'Solana',
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Ccircle cx='16' cy='16' r='16' fill='url(%23solana-gradient)'/%3E%3Cdefs%3E%3ClinearGradient id='solana-gradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300D4FF'/%3E%3Cstop offset='100%25' stop-color='%239945FF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='%23FFF' d='M7.5 19.8c.2-.2.5-.3.8-.3h17.4c.7 0 1 .9.5 1.4l-2.7 2.7c-.2.2-.5.3-.8.3H5.3c-.7 0-1-.9-.5-1.4l2.7-2.7zm0-7.6c.2-.2.5-.3.8-.3h17.4c.7 0 1 .9.5 1.4l-2.7 2.7c-.2.2-.5.3-.8.3H5.3c-.7 0-1-.9-.5-1.4l2.7-2.7zm19.8-4.9l-2.7-2.7c-.2-.2-.5-.3-.8-.3H6.3c-.7 0-1 .9-.5 1.4l2.7 2.7c.2.2.5.3.8.3h17.4c.7 0 1-.9.5-1.4z'/%3E%3C/g%3E%3C/svg%3E"
+            },
+            'custom': {
+                symbol: 'TOKEN',
+                name: 'Custom Token',
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Ccircle cx='16' cy='16' r='16' fill='%236B7280'/%3E%3Ctext x='16' y='20' text-anchor='middle' fill='%23FFF' font-size='12' font-weight='600'%3E%3F%3C/text%3E%3C/g%3E%3C/svg%3E"
+            }
+        };
+
+        // Update token display
+        function updateTokenDisplay(tokenId, price) {
+            const info = tokenInfo[tokenId] || tokenInfo['custom'];
+            
+            document.getElementById('tokenIcon').src = info.icon;
+            document.getElementById('tokenIcon').alt = info.symbol;
+            document.getElementById('tokenSymbol').textContent = info.symbol;
+            
+            if (price !== undefined) {
+                document.getElementById('tokenPrice').textContent = `$${utils.formatNumber(price, 2)}`;
+            }
+            
+            // Update preview labels when token changes
+            updatePreviewLabels();
+        }
+
+        // Token price fetching
+        async function fetchTokenPrice() {
+            const tokenSelect = document.getElementById('tokenSelect');
+            const entryPriceInput = document.getElementById('entryPrice');
+            const lowerRangeInput = document.getElementById('lowerRange');
+            const upperRangeInput = document.getElementById('upperRange');
+            const priceLoading = document.getElementById('priceLoading');
+            
+            if (tokenSelect.value === 'custom') {
+                entryPriceInput.disabled = false;
+                updateTokenDisplay('custom');
+                return;
+            }
+            
+            try {
+                isLoading = true;
+                priceLoading.style.display = 'block';
+                entryPriceInput.disabled = true;
+                
+                const price = await tokenAPI.fetchTokenPrice(tokenSelect.value);
+                entryPriceInput.value = price.toFixed(2);
+                
+                // Update token display
+                updateTokenDisplay(tokenSelect.value, price);
+                
+                // Update preview label when token changes
+                updatePreviewLabels();
+                
+                // Auto-set ranges (±10%)
+                lowerRangeInput.value = (price * 0.9).toFixed(2);
+                upperRangeInput.value = (price * 1.1).toFixed(2);
+                
+                entryPriceInput.disabled = false;
+                updateTokenInputs();
+                updateTable();
+                
+            } catch (error) {
+                console.error('Failed to fetch price:', error);
+                entryPriceInput.disabled = false;
+                alert('Failed to fetch price. Please enter manually.');
+            } finally {
+                isLoading = false;
+                priceLoading.style.display = 'none';
+            }
+        }
+        
+        // Update preview labels when token changes
+        function updatePreviewLabels() {
+            const currentTokenSymbol = document.getElementById('tokenSymbol').textContent;
+            const previewTokenLabel = document.getElementById('previewTokenLabel');
+            
+            if (previewTokenLabel) {
+                previewTokenLabel.textContent = `${currentTokenSymbol} Amount:`;
+            }
+        }
+
+        // Mobile Modal Functions
+        function openMobileModal() {
+            const overlay = document.getElementById('mobileModalOverlay');
+            const modal = document.getElementById('mobileModal');
+            
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                modal.classList.add('open');
+            }, 10);
+            
+            // Update mobile table when opening
+            updateMobileTable();
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMobileModal() {
+            const overlay = document.getElementById('mobileModalOverlay');
+            const modal = document.getElementById('mobileModal');
+            
+            modal.classList.remove('open');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
+            
+            // Restore body scroll
+            document.body.style.overflow = '';
+        }
+
+        function updateMobileTable() {
+            // Get mobile-specific controls
+            const mobilePriceRange = document.getElementById('mobilePriceRange').value;
+            const mobileStepSize = document.getElementById('mobileStepSize').value;
+            
+            // Get LP amount from token inputs
+            const preview = document.getElementById('lpPreview');
+            const previewTotal = document.getElementById('previewTotal');
+            const tokenInput = document.getElementById('tokenInput');
+            const usdcInput = document.getElementById('usdcInput');
+            
+            let lpAmount;
+            
+            // Check if we have valid token inputs to calculate LP amount
+            if ((tokenInput.value && parseFloat(tokenInput.value) > 0) || (usdcInput.value && parseFloat(usdcInput.value) > 0)) {
+                if (preview.style.display !== 'none' && previewTotal.textContent !== '$0') {
+                    // Use calculated LP amount from token inputs
+                    lpAmount = parseFloat(previewTotal.textContent.replace(/[$,]/g, ''));
+                } else {
+                    // Calculate LP amount based on current inputs
+                    const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+                    const lowerRange = parseFloat(document.getElementById('lowerRange').value);
+                    const upperRange = parseFloat(document.getElementById('upperRange').value);
+                    
+                    if (tokenInput.value && parseFloat(tokenInput.value) > 0) {
+                        const tokenAmount = parseFloat(tokenInput.value);
+                        const result = calculator.calculateLPFromTokenInput(entryPrice, tokenAmount, lowerRange, upperRange, 'token');
+                        lpAmount = result.totalValue;
+                    } else if (usdcInput.value && parseFloat(usdcInput.value) > 0) {
+                        const usdcAmount = parseFloat(usdcInput.value);
+                        const result = calculator.calculateLPFromTokenInput(entryPrice, usdcAmount, lowerRange, upperRange, 'usdc');
+                        lpAmount = result.totalValue;
+                    } else {
+                        lpAmount = 10000; // Fallback
+                    }
+                }
+            } else {
+                // No token inputs, use default amount but calculate proper LP position
+                lpAmount = 10000;
+            }
+            
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            const lowerRange = parseFloat(document.getElementById('lowerRange').value);
+            const upperRange = parseFloat(document.getElementById('upperRange').value);
+            const shortSize = parseFloat(document.getElementById('shortSize').value);
+            
+            // Validate inputs
+            const errors = utils.validateInputs(entryPrice, lpAmount, lowerRange, upperRange, shortSize);
+            if (errors.length > 0) {
+                console.warn('Mobile validation errors:', errors);
+                return;
+            }
+            
+            const mobileTableBody = document.getElementById('mobileResultsTable');
+            mobileTableBody.innerHTML = '';
+            
+            const results = tableGenerator.generateTableData(
+                entryPrice, lpAmount, lowerRange, upperRange, shortSize, mobilePriceRange, mobileStepSize
+            );
+            
+            let bestProtectionRow = null;
+            let bestProtection = -Infinity;
+            
+            results.forEach(result => {
+                const row = document.createElement('tr');
+                
+                // Track best capital protection for downside scenarios
+                if (result.price < entryPrice && result.capitalProtected > bestProtection) {
+                    bestProtection = result.capitalProtected;
+                    if (bestProtectionRow) bestProtectionRow.classList.remove('optimal-row');
+                    bestProtectionRow = row;
+                    row.classList.add('optimal-row');
+                }
+                
+                // Highlight current price
+                if (result.isCurrentPrice) {
+                    row.classList.add('highlight-row');
+                }
+                
+                row.innerHTML = `
+                    <td class="price-cell">${utils.formatCurrency(result.price)}</td>
+                    <td class="${utils.getColorClass(result.priceChange)}">${utils.formatPercent(result.priceChange)}</td>
+                    <td>${utils.formatNumber(result.tokenAmount, 4)}</td>
+                    <td>${utils.formatCurrency(result.usdAmount)}</td>
+                    <td>${utils.formatCurrency(result.totalValue)}</td>
+                    <td class="${utils.getColorClass(result.lpPnL)}">${result.lpPnL >= 0 ? '+' : ''}${utils.formatCurrency(result.lpPnL)}</td>
+                    <td class="${utils.getColorClass(result.shortPnL)}">${result.shortPnL >= 0 ? '+' : ''}${utils.formatCurrency(result.shortPnL)}</td>
+                    <td class="${utils.getColorClass(result.netPnL)}">${result.netPnL >= 0 ? '+' : ''}${utils.formatCurrency(result.netPnL)}</td>
+                    <td class="${utils.getColorClass(result.returnPct)}">${utils.formatPercent(result.returnPct)}</td>
+                `;
+                
+                mobileTableBody.appendChild(row);
+            });
+        }
+        
+        // Select strategy and update short size
+        function selectStrategy(strategyType) {
+            // Remove selection from all cards
+            document.querySelectorAll('.strategy-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked card
+            const selectedCard = document.querySelector(`.${strategyType}-strategy`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+            }
+            
+            // Update short size input based on strategy
+            const shortInput = document.getElementById('shortSize');
+            let shortValue;
+            
+            switch(strategyType) {
+                case 'bull':
+                    shortValue = document.getElementById('bullShort').textContent;
+                    break;
+                case 'normal':
+                    shortValue = document.getElementById('normalShort').textContent;
+                    break;
+                case 'bear':
+                    shortValue = document.getElementById('bearShort').textContent;
+                    break;
+                default:
+                    return;
+            }
+            
+            // Extract numeric value from formatted currency
+            const numericValue = parseFloat(shortValue.replace(/[$,]/g, ''));
+            if (!isNaN(numericValue)) {
+                shortInput.value = Math.round(numericValue);
+                // Update table with new short size
+                updateTable();
+            }
+        }
+
+        // Calculate from token input (dynamic for any token)
+        function calculateFromToken() {
+            const tokenInput = document.getElementById('tokenInput');
+            const usdcInput = document.getElementById('usdcInput');
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            const lowerRange = parseFloat(document.getElementById('lowerRange').value);
+            const upperRange = parseFloat(document.getElementById('upperRange').value);
+            
+            if (!tokenInput.value || tokenInput.value <= 0 || isNaN(tokenInput.value)) {
+                usdcInput.value = '';
+                hideLPPreview();
+                return;
+            }
+            
+            if (isNaN(entryPrice) || isNaN(lowerRange) || isNaN(upperRange)) {
+                console.warn('Invalid price inputs');
+                return;
+            }
+            
+            const tokenAmount = parseFloat(tokenInput.value);
+            
+            try {
+                const result = calculator.calculateLPFromTokenInput(
+                    entryPrice, tokenAmount, lowerRange, upperRange, 'token'
+                );
+                
+                if (result && result.usdAmount !== undefined && result.totalValue !== undefined) {
+                    usdcInput.value = result.usdAmount.toFixed(2);
+                    showLPPreview(result.tokenAmount, result.usdAmount, result.totalValue);
+                    
+                    // Update short size suggestion
+                    updateShortSuggestion(result.totalValue);
+                    
+                    // Update table
+                    updateTable();
+                } else {
+                    console.error('Invalid calculation result:', result);
+                    usdcInput.value = '';
+                    hideLPPreview();
+                }
+                
+            } catch (error) {
+                console.error('Token calculation error:', error);
+                usdcInput.value = '';
+                hideLPPreview();
+            }
+        }
+
+        // Calculate from USDC input
+        function calculateFromUSDC() {
+            const tokenInput = document.getElementById('tokenInput');
+            const usdcInput = document.getElementById('usdcInput');
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            const lowerRange = parseFloat(document.getElementById('lowerRange').value);
+            const upperRange = parseFloat(document.getElementById('upperRange').value);
+            
+            if (!usdcInput.value || usdcInput.value <= 0) {
+                tokenInput.value = '';
+                hideLPPreview();
+                return;
+            }
+            
+            const usdcAmount = parseFloat(usdcInput.value);
+            
+            try {
+                const result = calculator.calculateLPFromTokenInput(
+                    entryPrice, usdcAmount, lowerRange, upperRange, 'usdc'
+                );
+                
+                tokenInput.value = result.tokenAmount.toFixed(6);
+                showLPPreview(result.tokenAmount, result.usdAmount, result.totalValue);
+                
+                // Update short size suggestion
+                updateShortSuggestion(result.totalValue);
+                
+            } catch (error) {
+                console.error('USDC calculation error:', error);
+                tokenInput.value = '';
+                hideLPPreview();
+            }
+        }
+
+        // Show LP preview
+        function showLPPreview(tokenAmount, usdcAmount, totalValue) {
+            const preview = document.getElementById('lpPreview');
+            const previewTotal = document.getElementById('previewTotal');
+            const previewToken = document.getElementById('previewETH'); // This will be renamed dynamically
+            const previewUSDC = document.getElementById('previewUSDC');
+            
+            // Get current token symbol
+            const currentTokenSymbol = document.getElementById('tokenSymbol').textContent;
+            
+            previewTotal.textContent = utils.formatCurrency(totalValue);
+            previewToken.textContent = `${utils.formatNumber(tokenAmount, 6)} ${currentTokenSymbol}`;
+            previewUSDC.textContent = `${utils.formatNumber(usdcAmount, 2)} USDC`;
+            
+            preview.style.display = 'block';
+        }
+
+        // Hide LP preview
+        function hideLPPreview() {
+            document.getElementById('lpPreview').style.display = 'none';
+        }
+
+        // Update short size suggestion
+        function updateShortSuggestion(totalValue) {
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            const lowerRange = parseFloat(document.getElementById('lowerRange').value);
+            const upperRange = parseFloat(document.getElementById('upperRange').value);
+            
+            try {
+                // Update recommendation display with 3 strategies
+                updateRecommendationDisplay(entryPrice, totalValue, lowerRange, upperRange);
+                
+            } catch (error) {
+                console.error('Short calculation error:', error);
+            }
+        }
+
+        // Update recommendation display with 3 strategies
+        function updateRecommendationDisplay(entryPrice, totalValue, lowerRange, upperRange) {
+            try {
+                // Calculate all three strategies
+                const strategies = calculator.calculateMarketBasedShortSizes(entryPrice, totalValue, lowerRange, upperRange);
+                
+                // Update Bull Market strategy
+                const bullHedgeRatio = (strategies.bull / totalValue) * 100;
+                document.getElementById('bullShort').textContent = utils.formatCurrency(strategies.bull);
+                document.getElementById('bullHedgeRatio').textContent = `${utils.formatNumber(bullHedgeRatio, 1)}%`;
+                
+                // Update Normal strategy
+                const normalHedgeRatio = (strategies.normal / totalValue) * 100;
+                document.getElementById('normalShort').textContent = utils.formatCurrency(strategies.normal);
+                document.getElementById('normalHedgeRatio').textContent = `${utils.formatNumber(normalHedgeRatio, 1)}%`;
+                
+                // Update Bear Market strategy
+                const bearHedgeRatio = (strategies.bear / totalValue) * 100;
+                document.getElementById('bearShort').textContent = utils.formatCurrency(strategies.bear);
+                document.getElementById('bearHedgeRatio').textContent = `${utils.formatNumber(bearHedgeRatio, 1)}%`;
+                
+                // Update the short size input with normal strategy by default
+                document.getElementById('shortSize').value = Math.round(strategies.normal);
+                
+            } catch (error) {
+                console.error('Recommendation display error:', error);
+                // Reset to defaults on error
+                document.getElementById('bullShort').textContent = '$0';
+                document.getElementById('bullHedgeRatio').textContent = '-';
+                document.getElementById('normalShort').textContent = '$0';
+                document.getElementById('normalHedgeRatio').textContent = '-';
+                document.getElementById('bearShort').textContent = '$0';
+                document.getElementById('bearHedgeRatio').textContent = '-';
+            }
+        }
+
+        // Update token inputs when price or range changes
+        function updateTokenInputs() {
+            const tokenInput = document.getElementById('tokenInput');
+            const usdcInput = document.getElementById('usdcInput');
+            
+            if (tokenInput.value) {
+                calculateFromToken();
+            } else if (usdcInput.value) {
+                calculateFromUSDC();
+            }
+        }
+        
+        function updateTable() {
+            // Get LP amount from token inputs
+            const preview = document.getElementById('lpPreview');
+            const previewTotal = document.getElementById('previewTotal');
+            const tokenInput = document.getElementById('tokenInput');
+            const usdcInput = document.getElementById('usdcInput');
+            
+            let lpAmount;
+            
+            // Check if we have valid token inputs to calculate LP amount
+            if ((tokenInput.value && parseFloat(tokenInput.value) > 0) || (usdcInput.value && parseFloat(usdcInput.value) > 0)) {
+                if (preview.style.display !== 'none' && previewTotal.textContent !== '$0') {
+                    // Use calculated LP amount from token inputs
+                    lpAmount = parseFloat(previewTotal.textContent.replace(/[$,]/g, ''));
+                } else {
+                    // Calculate LP amount based on current inputs
+                    const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+                    const lowerRange = parseFloat(document.getElementById('lowerRange').value);
+                    const upperRange = parseFloat(document.getElementById('upperRange').value);
+                    
+                    if (tokenInput.value && parseFloat(tokenInput.value) > 0) {
+                        const tokenAmount = parseFloat(tokenInput.value);
+                        const result = calculator.calculateLPFromTokenInput(entryPrice, tokenAmount, lowerRange, upperRange, 'token');
+                        lpAmount = result.totalValue;
+                    } else if (usdcInput.value && parseFloat(usdcInput.value) > 0) {
+                        const usdcAmount = parseFloat(usdcInput.value);
+                        const result = calculator.calculateLPFromTokenInput(entryPrice, usdcAmount, lowerRange, upperRange, 'usdc');
+                        lpAmount = result.totalValue;
+                    } else {
+                        lpAmount = 10000; // Fallback
+                    }
+                }
+            } else {
+                // No token inputs, use default amount but calculate proper LP position
+                lpAmount = 10000;
+            }
+            
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            const lowerRange = parseFloat(document.getElementById('lowerRange').value);
+            const upperRange = parseFloat(document.getElementById('upperRange').value);
+            const shortSize = parseFloat(document.getElementById('shortSize').value);
+            const priceRange = document.getElementById('priceRange').value;
+            const stepSize = document.getElementById('stepSize').value;
+            
+            // Validate inputs
+            const errors = utils.validateInputs(entryPrice, lpAmount, lowerRange, upperRange, shortSize);
+            if (errors.length > 0) {
+                console.warn('Validation errors:', errors);
+                return;
+            }
+            
+            const tableBody = document.getElementById('resultsTable');
+            tableBody.innerHTML = '';
+            
+            const results = tableGenerator.generateTableData(
+                entryPrice, lpAmount, lowerRange, upperRange, shortSize, priceRange, stepSize
+            );
+            
+            let bestProtectionRow = null;
+            let bestProtection = -Infinity;
+            
+            results.forEach(result => {
+                const row = document.createElement('tr');
+                
+                // Track best capital protection for downside scenarios
+                if (result.price < entryPrice && result.capitalProtected > bestProtection) {
+                    bestProtection = result.capitalProtected;
+                    if (bestProtectionRow) bestProtectionRow.classList.remove('optimal-row');
+                    bestProtectionRow = row;
+                    row.classList.add('optimal-row');
+                }
+                
+                // Highlight current price (should be applied after other classes)
+                if (result.isCurrentPrice) {
+                    row.classList.add('highlight-row');
+                }
+                
+                row.innerHTML = `
+                    <td class="price-cell">${utils.formatCurrency(result.price)}</td>
+                    <td class="${utils.getColorClass(result.priceChange)}">${utils.formatPercent(result.priceChange)}</td>
+                    <td>${utils.formatNumber(result.tokenAmount, 4)}</td>
+                    <td>${utils.formatCurrency(result.usdAmount)}</td>
+                    <td>${utils.formatCurrency(result.totalValue)}</td>
+                    <td class="${utils.getColorClass(result.lpPnL)}">${result.lpPnL >= 0 ? '+' : ''}${utils.formatCurrency(result.lpPnL)}</td>
+                    <td class="${utils.getColorClass(result.shortPnL)}">${result.shortPnL >= 0 ? '+' : ''}${utils.formatCurrency(result.shortPnL)}</td>
+                    <td class="${utils.getColorClass(result.netPnL)}">${result.netPnL >= 0 ? '+' : ''}${utils.formatCurrency(result.netPnL)}</td>
+                    <td class="${utils.getColorClass(result.returnPct)}">${utils.formatPercent(result.returnPct)}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function calculateQuick() {
+            const quickPrice = parseFloat(document.getElementById('quickPrice').value);
+            const entryPrice = parseFloat(document.getElementById('entryPrice').value);
+            
+            // Get LP amount from token inputs preview
+            const preview = document.getElementById('lpPreview');
+            const previewTotal = document.getElementById('previewTotal');
+            
+            let lpAmount;
+            if (preview.style.display !== 'none' && previewTotal.textContent !== '$0') {
+                // Use calculated LP amount from token inputs
+                lpAmount = parseFloat(previewTotal.textContent.replace(/[$,]/g, ''));
+            } else {
+                // Fallback to default amount
+                lpAmount = 10000;
+            }
+            
+            const lowerRange = parseFloat(document.getElementById('lowerRange').value);
+            const upperRange = parseFloat(document.getElementById('upperRange').value);
+            const shortSize = parseFloat(document.getElementById('shortSize').value);
+            
+            if (!quickPrice || quickPrice <= 0) {
+                alert('Please enter a valid price.');
+                return;
+            }
+            
+            // Validate inputs
+            const errors = utils.validateInputs(entryPrice, lpAmount, lowerRange, upperRange, shortSize);
+            if (errors.length > 0) {
+                alert('Input validation errors: ' + errors.join(', '));
+                return;
+            }
+            
+            const lpResult = calculator.calculateLPPosition(quickPrice, entryPrice, lpAmount, lowerRange, upperRange);
+            const shortPnL = calculator.calculateShortPnL(quickPrice, entryPrice, shortSize);
+            
+            // LP P&L = 현재 LP 가치 - 초기 투자 금액
+            const lpPnL = lpResult.totalValue - lpAmount;
+            
+            // Net P&L = LP P&L + Short P&L
+            const netPnL = lpPnL + shortPnL;
+            
+            // Return = Net P&L / 초기 투자 금액
+            const returnPct = (netPnL / lpAmount) * 100;
+            
+            // Update quick results
+            document.getElementById('quickLpValue').textContent = utils.formatCurrency(lpResult.totalValue);
+            
+            const lpPnLElement = document.getElementById('quickLpPnL');
+            lpPnLElement.textContent = `${lpPnL >= 0 ? '+' : ''}${utils.formatCurrency(lpPnL)}`;
+            lpPnLElement.className = `metric-value ${utils.getColorClass(lpPnL)}`;
+            
+            const shortElement = document.getElementById('quickShortPnL');
+            shortElement.textContent = `${shortPnL >= 0 ? '+' : ''}${utils.formatCurrency(shortPnL)}`;
+            shortElement.className = `metric-value ${utils.getColorClass(shortPnL)}`;
+            
+            const netElement = document.getElementById('quickNetPnL');
+            netElement.textContent = `${netPnL >= 0 ? '+' : ''}${utils.formatCurrency(netPnL)}`;
+            netElement.className = `metric-value ${utils.getColorClass(netPnL)}`;
+            
+            const returnElement = document.getElementById('quickReturn');
+            returnElement.textContent = `${utils.formatPercent(returnPct)}`;
+            returnElement.className = `metric-value ${utils.getColorClass(returnPct)}`;
+            
+            // Show debug info for initial position
+            const debugInfo = document.getElementById('debugInfo');
+            const debugContent = document.getElementById('debugContent');
+            const currentTokenSymbol = document.getElementById('tokenSymbol').textContent;
+            
+            if (debugContent) {
+                debugContent.innerHTML = `
+                    Initial Token: ${utils.formatNumber(lpResult.initialTokenAmount, 4)} ${currentTokenSymbol}<br>
+                    Initial USD: ${utils.formatCurrency(lpResult.initialUsdAmount)}<br>
+                    Liquidity L: ${utils.formatNumber(lpResult.liquidity, 2)}<br>
+                    Current Token: ${utils.formatNumber(lpResult.tokenAmount, 4)} ${currentTokenSymbol}<br>
+                    Current USD: ${utils.formatCurrency(lpResult.usdAmount)}
+                `;
+                debugInfo.style.display = 'block';
+            }
+        }
+        
+        // Event listeners
+        document.querySelectorAll('.input-field').forEach(input => {
+            if (input.id === 'entryPrice' || input.id === 'lowerRange' || input.id === 'upperRange') {
+                input.addEventListener('input', function() {
+                    updateTokenInputs();
+                    updateTable();
+                });
+            } else {
+                input.addEventListener('input', updateTable);
+            }
+        });
+        
+        document.getElementById('quickPrice').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                calculateQuick();
+            }
+        });
+
+        // ESC key to close mobile modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('mobileModal');
+                if (modal.classList.contains('open')) {
+                    closeMobileModal();
+                }
+            }
+        });
+        
+        // Initialize
+        window.addEventListener('load', function() {
+            // Clear token inputs initially
+            document.getElementById('tokenInput').value = '';
+            document.getElementById('usdcInput').value = '';
+            
+            // Update preview labels
+            updatePreviewLabels();
+            hideLPPreview();
+            
+            // Select normal strategy by default
+            selectStrategy('normal');
+            
+            updateTable();
+        });
+        
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
